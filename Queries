@@ -1,0 +1,126 @@
+
+//Query:
+LOAD CSV WITH HEADERS FROM "file:///imdb.csv" AS row
+MERGE (m:Movie {title: row.movie_title})
+ON CREATE SET m.duration = toInteger(row.duration),
+m.director_name = row.director_name,
+m.imdb_score = toFloat(row.imdb_score),
+m.title_year = toInteger(row.title_year),
+m.num_critic_for_reviews = toInteger(row.num_critic_for_reviews),
+m.num_user_for_reviews = toInteger(row.num_user_for_reviews),
+m.budget = toFloat(row.budget),
+m.gross = toFloat(row.gross)
+MERGE (a:Actor {name: row.actor_1_name})
+ON CREATE SET a.actor_facebook_likes = toInteger(row.actor_1_facebook_likes)
+MERGE (m)-[:ACTS_IN]->(a)
+MERGE (d:Director {name: row.director_name})
+ON CREATE SET d.director_facebook_likes = toInteger(row.director_facebook_likes)
+MERGE (d)-[:DIRECTED]->(m)
+
+
+ 
+
+ 
+//Adding a node:
+CREATE (m:Movie {title: 'The Matrix', title_year: 1999, imdb_rating: 8.7})
+ 
+//Adding a relationship:
+MATCH (m:Movie {title: 'The Matrix'})
+MATCH (a:Actor {name: 'Keanu Reeves'})
+MERGE (a)-[:ACTS_IN]->(m)
+ 
+MATCH (a:Actor)-[r:ACTS_IN]->(m:Movie {title: 'The Matrix'}) RETURN a, r, m
+
+//Updating a node:
+MATCH (m:Movie {title: 'The Matrix'}) SET m.title_year = 1998
+ 
+MATCH (m:Movie {title: 'The Matrix'})
+RETURN m
+
+//Deleting a node with the movie_title “Quantum_of_solace” 
+MATCH (m:Movie {title: 'Quantum of Solace'})
+DETACH DELETE m
+ 
+//Checking if the node still exists:
+MATCH (m:Movie {title: 'Quantum of Solace'})
+RETURN m
+
+ 
+
+//QUERIES:
+//1.Top 10 highest grossing movies:
+
+MATCH (m:Movie) WHERE toInteger(m.gross) IS NOT NULL
+RETURN DISTINCT m.title, toInteger(m.gross)
+ORDER BY toInteger(m.gross) DESC
+ 
+
+//2.Query to show the profit of the movies each year 
+
+MATCH (m:Movie)
+WHERE toInteger(m.gross) IS NOT NULL AND toInteger(m.budget) IS NOT NULL AND toInteger(m.title_year) IS NOT NULL
+WITH m, toInteger(m.gross) - toInteger(m.budget) AS profit
+RETURN m.title_year AS title_year, sum(profit) AS total_profit
+ORDER BY title_year
+
+ 
+
+//3.Top 5 highest IMDB rating movies
+
+MATCH (m:Movie) 
+WHERE m.imdb_score IS NOT NULL
+RETURN m.title, m.imdb_score
+ORDER BY m.imdb_score DESC
+LIMIT 5
+
+ 
+
+
+//4.Top 5 years which had the highest budget:
+
+MATCH (m:Movie)
+WHERE m.budget IS NOT NULL AND m.title_year IS NOT NULL
+WITH m.title_year AS year, SUM(m.budget) AS total_budget
+RETURN year, total_budget
+ORDER BY total_budget DESC
+LIMIT 5
+
+ 
+
+//5.The name of the movie with the highest number of  critic reviews and its profit:
+MATCH (m:Movie)
+WHERE m.num_user_for_reviews IS NOT NULL AND m.num_critic_for_reviews IS NOT NULL
+RETURN m.title AS movie_title, m.num_critic_for_reviews AS critic_reviews, (toInteger(m.gross)-toInteger(m.budget)) AS movie_profit
+ORDER BY m.num_critic_for_reviews DESC
+LIMIT 1
+ 
+
+
+
+
+
+//6.Name of the directors who have directed the highest budget movie from year 2009-2013:
+
+MATCH (d:Director)-[:DIRECTED]->(m:Movie)
+WHERE m.title_year >= 2009 AND m.title_year <= 2013 AND m.budget IS NOT NULL
+WITH d, m
+ORDER BY m.budget DESC
+RETURN d.name AS director_name, m.title AS movie_title, m.budget AS movie_budget
+LIMIT 5
+ 
+
+
+
+//7.The top 5 directors who have directed the most number of movies and their imdb ratings;
+
+MATCH (d:Director)-[:DIRECTED]->(m:Movie)
+WITH d, count(m) AS num_movies, avg(m.imdb_score) AS avg_score
+ORDER BY num_movies DESC
+LIMIT 5
+RETURN d.name, num_movies, avg_score
+ 
+
+
+
+
+
