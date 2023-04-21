@@ -1,4 +1,8 @@
+Install neo4j-https://neo4j.com/docs/desktop-manual/current/installation/download-installation/
+please follow the link
 
+
+Make sure the csv file that is supposed to be immported is in the import folder in the neo4j folder
 //Query:
 LOAD CSV WITH HEADERS FROM "file:///imdb.csv" AS row
 MERGE (m:Movie {title: row.movie_title})
