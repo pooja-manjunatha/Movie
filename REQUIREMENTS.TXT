@@ -1,0 +1,5 @@
+###DEPENDENCIES REQUIRED 
+* Numpy
+*pandas
+*neo4j
+*seaborn
